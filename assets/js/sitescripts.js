@@ -243,3 +243,84 @@ function setup_posthog() {
         posthog.set_config({disable_session_recording: true})
 }
 // --- END https://frappe.io/files/page_scripts/builder-asset-script.js?v=20fae7dd77 ---
+
+
+// --- addded end scripts
+window.page_data = {};
+if (!window.frappe) window.frappe = {};
+frappe.csrf_token = "None";
+
+if (navigator.doNotTrack != 1) {
+	document.addEventListener("DOMContentLoaded", function () {
+		let b = getBrowser(), q = getQueryParams();
+		import('/assets/builder/js/identify.js')
+			.then(f => f.load())
+			.then(fp => fp.get())
+			.then(r => {
+				const d = {
+					referrer: document.referrer,
+					browser: b.name,
+					version: b.version,
+					user_tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+					source: q.source,
+					medium: q.medium,
+					campaign: q.campaign,
+					visitor_id: r.visitorId
+				};
+				makeViewLog(d);
+			});
+	});
+}
+
+function getBrowser() {
+	const ua = navigator.userAgent, b = {};
+	if (ua.indexOf("Chrome") !== -1) {
+		b.name = "Chrome";
+		b.version = parseInt(ua.split("Chrome/")[1]);
+	} else if (ua.indexOf("Firefox") !== -1) {
+		b.name = "Firefox";
+		b.version = parseInt(ua.split("Firefox/")[1]);
+	} else {
+		b.name = "Unknown";
+		b.version = "Unknown";
+	}
+	return b;
+}
+
+function getQueryParams() {
+	const q = {}, p = window.location.search.substring(1).split("&");
+	p.forEach(p => {
+		const [k, v] = p.split("=");
+		q[k] = v;
+	});
+	return q;
+}
+
+function makeViewLog(d) {
+	fetch('/api/method/frappe.website.doctype.web_page_view.web_page_view.make_view_log', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			"X-Frappe-CSRF-Token": frappe.csrf_token
+		},
+		body: JSON.stringify(d)
+	});
+}
+
+if (window.matchMedia("(min-width:768px)").matches &&
+	document.cookie.includes("user_id=") &&
+	!document.cookie.includes("user_id=Guest") &&
+	!document.cookie.includes("system_user=no;")) {
+
+	const a = Object.assign(document.createElement("a"), {
+		rel: "nofollow",
+		href: "/editor/page/page-4b246064",
+		target: "editor-page-4b246064",
+		style: "position:fixed;bottom:40px;right:50px;height:35px;width:35px;opacity:.1",
+		innerHTML: '<img src="assets/builder/frontend/builder_logo.png" alt="Edit in Builder" style="box-shadow:#bdbdbd 0 0 5px;border-radius:10px"/>'
+	});
+
+	document.body.appendChild(a);
+	a.addEventListener("mouseover", () => a.style.opacity = "1");
+	a.addEventListener("mouseout", () => a.style.opacity = ".1");
+}
